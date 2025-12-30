@@ -1,0 +1,28 @@
+{
+    "paths": {
+        "data": "/data",
+        "logs": "/data/logs",
+        "config": "/data/config",
+        "database": "/data/database"
+    },
+    "database": {
+        "useMySQL": false,
+        "SQLiteName": "inventrazz",
+        "mySQLLogin": {
+            "host": "localhost",
+            "user": "root",
+            "password": "password",
+            "database": "stagestream.db",
+            "port": 3306
+        }
+    },
+    "web": {
+        "port": 3000,
+        "jwtSecret": "secret",
+        "frontEndURL": "http://localhost:3001"
+    },
+    "video": {
+        "url": "http://localhost:8889",
+        "api": "http://localhost:9997"
+    }
+}
