@@ -127,3 +127,20 @@ export async function error(msg: string): Promise<void> {
     );
   }
 }
+
+export async function request(msg: string): Promise<void> {
+  const time = new Date().toLocaleTimeString();
+  const formattedMsg = `[${time}] REQUEST: ${msg}`;
+
+  try {
+    console.log(colors.blue(formattedMsg));
+    logs.push(formattedMsg);
+    await writeLog(formattedMsg);
+  } catch (err) {
+    console.error(
+      colors.zalgo(
+        `[Logger Error] Failed to log request message: ${(err as Error).message}`
+      )
+    );
+  }
+}

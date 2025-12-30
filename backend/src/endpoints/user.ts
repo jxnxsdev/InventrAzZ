@@ -331,3 +331,71 @@ user.post('/createadmin', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+/**
+ * PUT /edit - Edits user information (self or others with EDIT_OTHER permission)
+ */
+user.put('/edit', authorize(), async (req: Request, res: Response) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    res.status(401).json({ error: 'Access denied. No token provided.' });
+    return;
+  }
+  const { targetUsername, newDisplayName, newPassword, newPermissions } =
+    req.body;
+  try {
+    const requestingUsername = await getUsernameFromToken(token);
+    if (!requestingUsername) {
+      res.status(401).json({ error: 'Invalid or expired token' });
+      return;
+    }
+    // @ts-ignore
+    const requesterPermissions: Permissions[] = req.user.permissions;
+    let isSelfEdit = requestingUsername === targetUsername || !targetUsername;
+    const usernameToEdit = isSelfEdit ? requestingUsername : targetUsername;
+    if (!isSelfEdit && !requesterPermissions.includes(Permissions.EDIT_OTHER)) {
+      res.status(403).json({
+        error: 'Forbidden. Insufficient permissions to edit other users.'
+      });
+      return;
+    }
+    const updates = [];
+    const params = [];
+    if (newDisplayName) {
+      updates.push('displayName = ?');
+      params.push(newDisplayName);
+    }
+    if (newPassword) {
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      updates.push('password = ?');
+      params.push(hashedPassword);
+    }
+    if (newPermissions && !isSelfEdit) {
+      if (
+        !Array.isArray(newPermissions) ||
+        !newPermissions.every((perm: string) =>
+          Object.values(Permissions).includes(perm as Permissions)
+        )
+      ) {
+        res.status(400).json({ error: 'Invalid permissions' });
+        return;
+      }
+      updates.push('permissions = ?');
+      params.push(JSON.stringify(newPermissions));
+    }
+    if (updates.length === 0) {
+      res.status(400).json({ error: 'No valid fields to update.' });
+      return;
+    }
+    params.push(usernameToEdit);
+    const updateQuery = `UPDATE users SET ${updates.join(', ')} WHERE name = ?`;
+    await database.query(updateQuery, params);
+    res.status(200).json({ message: 'User updated successfully' });
+    Logger.info(
+      `User ${usernameToEdit} updated successfully by ${requestingUsername}`
+    );
+  } catch (error) {
+    Logger.error(`Edit user error: ${(error as Error).message}`);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});

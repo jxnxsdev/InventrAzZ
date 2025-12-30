@@ -3,6 +3,7 @@ import * as Logger from './modules/logger';
 import * as defaults from './defaults.json';
 import * as database from './modules/database/database';
 import cors from 'cors';
+import { logRequest } from './middlewares/logging';
 
 // Endpoints
 import { user } from './endpoints/user';
@@ -23,6 +24,7 @@ app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(logRequest);
 app.use('/user', user);
 
 const port = process.env.WEB_PORT || defaults.web.port;
